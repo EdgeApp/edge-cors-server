@@ -1,0 +1,10 @@
+{
+  "apps": [
+    {
+      "name": "indexCors",
+      "script": "lib/indexCors.js",
+      "error_file": "/var/log/pm2/indexCors.error.log",
+      "out_file": "/var/log/pm2/indexCors.out.log"
+    }
+  ]
+}
