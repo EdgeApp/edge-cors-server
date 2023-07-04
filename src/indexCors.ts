@@ -12,18 +12,18 @@ app.use(express.json())
 app.use(cors())
 
 app.all('*', async (req: Request, res: Response) => {
-  const proxyDomain = req.headers.proxydomain
-  delete req.headers.proxydomain
+  const { 'proxy-url': proxyUrl } = req.headers
   delete req.headers['content-length']
+  delete req.headers['proxy-url']
   delete req.headers.connection
   delete req.headers.host
 
-  if (proxyDomain == null) {
-    res.status(400).send('No proxyDomain specified in headers')
+  if (proxyUrl == null) {
+    res.status(400).send('No proxy-url specified in headers')
     return
   }
 
-  const url: RequestInfo = `${proxyDomain}${req.path}`
+  const url: RequestInfo = `${proxyUrl}${req.path}`
   const init: RequestInit = {
     method: req.method,
     headers: req.headers as { [key: string]: string },
