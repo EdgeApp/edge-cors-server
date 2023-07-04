@@ -12,8 +12,9 @@ app.use(express.json())
 app.use(cors())
 
 app.all('*', async (req: Request, res: Response) => {
-  const { body, headers, method, path } = req
+  const { body, headers, ip, method, path } = req
   const { 'proxy-url': proxyUrl } = headers
+  const ipString = ip.includes(':') ? `[${ip}]` : ip
   delete headers['content-length']
   delete headers['proxy-url']
   delete headers.connection
@@ -26,8 +27,11 @@ app.all('*', async (req: Request, res: Response) => {
 
   const url: RequestInfo = `${proxyUrl}${path}`
   const init: RequestInit = {
-    method: method,
-    headers: headers as { [key: string]: string },
+    method,
+    headers: {...headers,
+      'X-Forwarded-For': ipString,
+      'Forwarded': `for=${ipString}`
+    } as { [key: string]: string },
     body: JSON.stringify(body)
   }
 
