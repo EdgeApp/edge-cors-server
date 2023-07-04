@@ -32,16 +32,25 @@ app.all('*', async (req: Request, res: Response) => {
 
   try {
     const response: FetchResponse = await fetch(url, init)
-    const body = await response.text()
+    const bodyText = await response.text()
     // Forward the headers
     response.headers.forEach((value, name) => {
       if (name === 'transfer-encoding') return
       res.header(name, value)
     })
-    res.send(body)
+    res.status(response.status).send(bodyText)
   } catch (err) {
-    console.error(err)
-    res.status(500).send('Error while making request')
+    let errMsg
+    if (typeof err === 'object')    {
+      const {code = '', errno = '', message = ''} = err as any
+      errMsg = `Bad Gateway: ${code ?? errno} ${message}`
+    } else if (typeof err === 'string') {
+      errMsg = err
+    } else {
+      errMsg = JSON.stringify(err)
+    }
+    console.error(errMsg)
+    res.status(502).send(errMsg)
   }
 })
 
