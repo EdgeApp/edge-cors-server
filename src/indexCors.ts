@@ -1,6 +1,8 @@
 import cors from 'cors'
 import express, { Request, Response } from 'express'
+import getRawBody from 'raw-body'
 import fetch, {
+  HeadersInit,
   RequestInfo,
   RequestInit,
   Response as FetchResponse
@@ -8,31 +10,44 @@ import fetch, {
 
 const app = express()
 
-app.use(express.json())
 app.use(cors())
 
 app.all('*', async (req: Request, res: Response) => {
-  const { body, headers, ip, method, path } = req
+  const { headers, ip, method, path, rawHeaders } = req
   const { 'proxy-url': proxyUrl } = headers
   const ipString = ip.includes(':') ? `[${ip}]` : ip
-  delete headers['content-length']
-  delete headers['proxy-url']
-  delete headers.connection
-  delete headers.host
+  const rawBody = await getRawBody(req, {
+    length: req.headers['content-length'],
+    encoding: req.headers['content-encoding'],
+  })
+  const body = rawBody.byteLength > 0 ? rawBody.toString() : undefined
 
   if (proxyUrl == null) {
     res.status(400).send('No proxy-url specified in headers')
     return
   }
 
+  const headersInit: HeadersInit = [];
+
+  for (let i = 0; i < rawHeaders.length; i += 2) {
+    const key = rawHeaders[i]
+    const value = rawHeaders[i + 1]
+    // Node.js includes some pseudo-headers that should not be forwarded
+    if (key.startsWith(':')) continue
+    if (key.toLowerCase() === 'content-length') continue
+    if (key.toLowerCase() === 'proxy-url') continue
+    if (key.toLowerCase() === 'connection') continue
+    if (key.toLowerCase() === 'host') continue
+    headersInit.push([key, value])
+  }
+  headersInit.push(['X-Forwarded-For', ipString])
+  headersInit.push(['Forwarded', `for=${ipString}`])
+
   const url: RequestInfo = `${proxyUrl}${path}`
   const init: RequestInit = {
     method,
-    headers: {...headers,
-      'X-Forwarded-For': ipString,
-      'Forwarded': `for=${ipString}`
-    } as { [key: string]: string },
-    body: JSON.stringify(body)
+    headers: headersInit,
+    body
   }
 
   try {
