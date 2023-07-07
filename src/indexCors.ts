@@ -34,14 +34,21 @@ app.all('*', async (req: Request, res: Response) => {
     const value = rawHeaders[i + 1]
     // Node.js includes some pseudo-headers that should not be forwarded
     if (key.startsWith(':')) continue
+
+    if (key.toLowerCase() === 'forwarded') continue
+    if (key.toLowerCase() === 'x-forwarded-for') continue
     if (key.toLowerCase() === 'content-length') continue
     if (key.toLowerCase() === 'proxy-url') continue
     if (key.toLowerCase() === 'connection') continue
     if (key.toLowerCase() === 'host') continue
     headersInit.push([key, value])
   }
-  headersInit.push(['X-Forwarded-For', ipString])
-  headersInit.push(['Forwarded', `for=${ipString}`])
+
+  const xForwardedFor = typeof headers['x-forwarded-for'] === 'string' ? `${headers['x-forwarded-for']}, ${ipString}` : ipString
+  const forwarded = typeof headers['forwarded'] === 'string' ?  `${headers['forwarded']}, for=${ipString}` : `for=${ipString}`
+
+  headersInit.push(['X-Forwarded-For', xForwardedFor])
+  headersInit.push(['Forwarded', forwarded])
 
   const url: RequestInfo = `${proxyUrl}${path}`
   const init: RequestInit = {
