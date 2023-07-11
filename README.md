@@ -1,3 +1,3 @@
-# edge-cores-server
+# edge-cors-server
 
 > Proxy server for CORS fetch calls

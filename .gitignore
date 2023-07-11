@@ -11,3 +11,4 @@ yarn-error.log
 # Editors:
 .DS_Store
 .idea/
+.vscode/
