@@ -14,7 +14,7 @@ app.use(cors())
 
 app.all('*', async (req: Request, res: Response) => {
   const { headers, ip, method, path, rawHeaders } = req
-  const { 'proxy-url': proxyUrl } = headers
+  const { 'x-proxy-url': proxyUrl } = headers
   const ipString = ip.includes(':') ? `[${ip}]` : ip
   const rawBody = await getRawBody(req, {
     length: req.headers['content-length'],
@@ -23,7 +23,7 @@ app.all('*', async (req: Request, res: Response) => {
   const body = rawBody.byteLength > 0 ? rawBody.toString() : undefined
 
   if (proxyUrl == null) {
-    res.status(400).send('No proxy-url specified in headers')
+    res.status(400).send('No x-proxy-url specified in headers')
     return
   }
 
@@ -38,7 +38,7 @@ app.all('*', async (req: Request, res: Response) => {
     if (key.toLowerCase() === 'forwarded') continue
     if (key.toLowerCase() === 'x-forwarded-for') continue
     if (key.toLowerCase() === 'content-length') continue
-    if (key.toLowerCase() === 'proxy-url') continue
+    if (key.toLowerCase() === 'x-proxy-url') continue
     if (key.toLowerCase() === 'connection') continue
     if (key.toLowerCase() === 'host') continue
     headersInit.push([key, value])
