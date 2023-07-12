@@ -35,6 +35,7 @@ app.all('*', async (req: Request, res: Response) => {
     // Node.js includes some pseudo-headers that should not be forwarded
     if (key.startsWith(':')) continue
 
+    if (key.toLowerCase() === 'user-agent') continue
     if (key.toLowerCase() === 'forwarded') continue
     if (key.toLowerCase() === 'x-forwarded-for') continue
     if (key.toLowerCase() === 'content-length') continue
