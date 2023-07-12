@@ -13,7 +13,7 @@ const app = express()
 app.use(cors())
 
 app.all('*', async (req: Request, res: Response) => {
-  const { headers, ip, method, path, rawHeaders } = req
+  const { headers, ip, method, rawHeaders } = req
   const { 'x-proxy-url': proxyUrl } = headers
   const ipString = ip.includes(':') ? `[${ip}]` : ip
   const rawBody = await getRawBody(req, {
@@ -24,6 +24,9 @@ app.all('*', async (req: Request, res: Response) => {
 
   if (proxyUrl == null) {
     res.status(400).send('No x-proxy-url specified in headers')
+    return
+  } else if (typeof proxyUrl !== 'string') {
+    res.status(400).send('Invalid x-proxy-url specified in headers')
     return
   }
 
@@ -51,7 +54,6 @@ app.all('*', async (req: Request, res: Response) => {
   headersInit.push(['X-Forwarded-For', xForwardedFor])
   headersInit.push(['Forwarded', forwarded])
 
-  const url: RequestInfo = `${proxyUrl}${path}`
   const init: RequestInit = {
     method,
     headers: headersInit,
@@ -59,7 +61,7 @@ app.all('*', async (req: Request, res: Response) => {
   }
 
   try {
-    const response: FetchResponse = await fetch(url, init)
+    const response: FetchResponse = await fetch(proxyUrl, init)
     const bodyText = await response.text()
     // Forward the headers
     response.headers.forEach((value, name) => {
