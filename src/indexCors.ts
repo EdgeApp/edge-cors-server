@@ -8,6 +8,11 @@ import fetch, {
   Response as FetchResponse
 } from 'node-fetch'
 
+const mylog =  (...args: string[]): void => {
+      const now = new Date().toISOString().slice(11, 23)
+      console.log(`${now}: ${args.join(' ')}`)
+    }
+
 const app = express()
 
 app.use(cors())
@@ -29,6 +34,7 @@ app.all('*', async (req: Request, res: Response) => {
     res.status(400).send('Invalid x-proxy-url specified in headers')
     return
   }
+  mylog(`Proxy: ${method} ${proxyUrl}`)
 
   const headersInit: HeadersInit = [];
 
