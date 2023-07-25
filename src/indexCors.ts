@@ -7,6 +7,7 @@ import fetch, {
   RequestInit,
   Response as FetchResponse
 } from 'node-fetch'
+import compression from 'compression'
 
 const mylog =  (...args: string[]): void => {
       const now = new Date().toISOString().slice(11, 23)
@@ -14,6 +15,8 @@ const mylog =  (...args: string[]): void => {
     }
 
 const app = express()
+
+app.use(compression())
 
 app.use(cors())
 
@@ -72,6 +75,7 @@ app.all('*', async (req: Request, res: Response) => {
     // Forward the headers
     response.headers.forEach((value, name) => {
       if (name === 'transfer-encoding') return
+      if (name === 'content-encoding') return
       res.header(name, value)
     })
     res.status(response.status).send(bodyText)
