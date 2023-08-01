@@ -8,6 +8,7 @@ import fetch, {
   Response as FetchResponse
 } from 'node-fetch'
 import compression from 'compression'
+import { checkStatusCode } from './fetchExceptions'
 
 const mylog =  (...args: string[]): void => {
       const now = new Date().toISOString().slice(11, 23)
@@ -78,7 +79,8 @@ app.all('*', async (req: Request, res: Response) => {
       if (name === 'content-encoding') return
       res.header(name, value)
     })
-    res.status(response.status).send(bodyText)
+    const overrideStatusCode = checkStatusCode(response)
+    res.status(overrideStatusCode ?? response.status).send(bodyText)
   } catch (err) {
     let errMsg
     if (typeof err === 'object')    {
