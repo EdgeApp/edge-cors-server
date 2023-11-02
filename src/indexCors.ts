@@ -1,33 +1,36 @@
+import compression from 'compression'
 import cors from 'cors'
 import express, { Request, Response } from 'express'
-import getRawBody from 'raw-body'
+import PromiseRouter from 'express-promise-router'
 import fetch, {
+  FetchError,
   HeadersInit,
-  RequestInfo,
   RequestInit,
   Response as FetchResponse
 } from 'node-fetch'
-import compression from 'compression'
+import getRawBody from 'raw-body'
+
 import { checkStatusCode } from './fetchExceptions'
 
-const mylog =  (...args: string[]): void => {
-      const now = new Date().toISOString().slice(11, 23)
-      console.log(`${now}: ${args.join(' ')}`)
-    }
+const mylog = (...args: string[]): void => {
+  const now = new Date().toISOString().slice(11, 23)
+  console.log(`${now}: ${args.join(' ')}`)
+}
 
 const app = express()
+const router = PromiseRouter()
 
 app.use(compression())
-
 app.use(cors())
+app.use(router)
 
-app.all('*', async (req: Request, res: Response) => {
+router.use(async (req: Request, res: Response): Promise<void> => {
   const { headers, ip, method, rawHeaders } = req
   const { 'x-proxy-url': proxyUrl } = headers
   const ipString = ip.includes(':') ? `[${ip}]` : ip
   const rawBody = await getRawBody(req, {
     length: req.headers['content-length'],
-    encoding: req.headers['content-encoding'],
+    encoding: req.headers['content-encoding']
   })
   const body = rawBody.byteLength > 0 ? rawBody.toString() : undefined
 
@@ -40,7 +43,7 @@ app.all('*', async (req: Request, res: Response) => {
   }
   mylog(`Proxy: ${method} ${proxyUrl}`)
 
-  const headersInit: HeadersInit = [];
+  const headersInit: HeadersInit = []
 
   for (let i = 0; i < rawHeaders.length; i += 2) {
     const key = rawHeaders[i]
@@ -58,8 +61,14 @@ app.all('*', async (req: Request, res: Response) => {
     headersInit.push([key, value])
   }
 
-  const xForwardedFor = typeof headers['x-forwarded-for'] === 'string' ? `${headers['x-forwarded-for']}, ${ipString}` : ipString
-  const forwarded = typeof headers['forwarded'] === 'string' ?  `${headers['forwarded']}, for=${ipString}` : `for=${ipString}`
+  const xForwardedFor =
+    typeof headers['x-forwarded-for'] === 'string'
+      ? `${headers['x-forwarded-for']}, ${ipString}`
+      : ipString
+  const forwarded =
+    typeof headers.forwarded === 'string'
+      ? `${headers.forwarded}, for=${ipString}`
+      : `for=${ipString}`
 
   headersInit.push(['X-Forwarded-For', xForwardedFor])
   headersInit.push(['Forwarded', forwarded])
@@ -81,10 +90,10 @@ app.all('*', async (req: Request, res: Response) => {
     })
     const overrideStatusCode = checkStatusCode(response)
     res.status(overrideStatusCode ?? response.status).send(bodyText)
-  } catch (err) {
+  } catch (err: unknown) {
     let errMsg
-    if (typeof err === 'object')    {
-      const {code = '', errno = '', message = ''} = err as any
+    if (err instanceof FetchError) {
+      const { code = '', errno = '', message = '' } = err
       errMsg = `Bad Gateway: ${code ?? errno} ${message}`
     } else if (typeof err === 'string') {
       errMsg = err
