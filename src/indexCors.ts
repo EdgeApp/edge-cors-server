@@ -1,6 +1,7 @@
 import compression from 'compression'
 import cors from 'cors'
 import express, { Request, Response } from 'express'
+import PromiseRouter from 'express-promise-router'
 import fetch, {
   FetchError,
   HeadersInit,
@@ -17,12 +18,13 @@ const mylog = (...args: string[]): void => {
 }
 
 const app = express()
+const router = PromiseRouter()
 
 app.use(compression())
-
 app.use(cors())
+app.use(router)
 
-app.all('*', async (req: Request, res: Response) => {
+router.use(async (req: Request, res: Response): Promise<void> => {
   const { headers, ip, method, rawHeaders } = req
   const { 'x-proxy-url': proxyUrl } = headers
   const ipString = ip.includes(':') ? `[${ip}]` : ip
