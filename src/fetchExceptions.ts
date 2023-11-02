@@ -1,9 +1,8 @@
-import {
-  Response as FetchResponse
-} from 'node-fetch'
+import { Response as FetchResponse } from 'node-fetch'
 
-
-export const checkStatusCode = (response: FetchResponse): number | undefined => {
+export const checkStatusCode = (
+  response: FetchResponse
+): number | undefined => {
   const { hostname } = new URL(response.url)
   const code = exceptionMap.get(hostname)
   if (code === response.status) {
@@ -15,6 +14,4 @@ export const checkStatusCode = (response: FetchResponse): number | undefined => 
 /**
  * Known response codes to override with teapot response
  */
-const exceptionMap = new Map([
-  ['api.binance.org', 403]
-])
+const exceptionMap = new Map([['api.binance.org', 403]])
